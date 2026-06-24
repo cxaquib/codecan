@@ -1,0 +1,6 @@
+{
+    "apiKeys": [
+        {"name": "My HF Key", "key": "hf-..."},
+        {"name": "My OpenRouter Key", "key": "<YOUR_OPENROUTER_API_KEY>"}
+    ]
+}
