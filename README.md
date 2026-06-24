@@ -28,12 +28,24 @@ npm run tauri:dev
 ```bash
 npm run tauri:dev       # Development mode (hot reload)
 npm run tauri:build     # Production build
+./scripts/rebuild-deb.sh  # Fix .deb after build (Tauri bundler bug workaround)
+sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb  # Install .deb
 ```
 
 1. Launch the app
 2. Select a folder or file to scan
 3. Click **Scan** for rule-based analysis, or **Scan with AI** for AI-powered analysis
 4. View results grouped by category with severity badges and code snippets
+
+### Cross-platform builds
+
+Windows and macOS builds require native runners. A GitHub Actions workflow is provided:
+
+```bash
+git tag v0.1.0 && git push --tags
+```
+
+Or trigger manually from the Actions tab. This produces `.msi` (Windows) and `.dmg` (macOS).
 
 ### CLI
 
@@ -55,7 +67,8 @@ Full architecture reference with every file, command, data flow, and design deci
 |---------|-------------|
 | `npm run dev` | Vite dev server (browser only) |
 | `npm run tauri:dev` | Tauri desktop app dev mode |
-| `npm run tauri:build` | Production Tauri bundle |
+| `npm run tauri:build` | Production Tauri bundle |  
+| `./scripts/rebuild-deb.sh` | Fix corrupt .deb after `tauri build` |
 | `npm run check` | Type-check (svelte-check) |
 | `npm run build` | Frontend build only |
 | `npm run test` | Run scanner tests (Vitest) |

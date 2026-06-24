@@ -9,3 +9,7 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .codecan.json
+
+# Build artifacts
+.xwin-cache/
+src-tauri/target/
