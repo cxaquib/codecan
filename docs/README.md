@@ -4,6 +4,7 @@ This folder contains documentation for added features and implementation instruc
 
 ## Available Features
 
+- [Architecture Reference](./ARCHITECTURE.md) - Full project reference: all files, commands, data flows, design decisions (AI-friendly)
 - [Code Analysis Scanner](./features/code-analyzer-plan.md) - Tool to detect redundant, duplicate, and unused code
 
 ## Structure
