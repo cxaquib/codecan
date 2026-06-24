@@ -49,6 +49,7 @@
   let showAddKey = $state(false);
   let newKeyName = $state("");
   let newKeyValue = $state("");
+  let credits = $state(60);
 
   let elapsedDisplay = $derived.by(() => {
     const m = Math.floor(elapsedSeconds / 60);
@@ -354,6 +355,13 @@
       error = "Please add a Hugging Face API key for cloud AI.";
       return;
     }
+    if (!isLocalModel) {
+      if (credits <= 0) {
+        error = "No credits remaining. Restart the app to reset your 60 session credits.";
+        return;
+      }
+      credits--;
+    }
     busy = true;
     isAIScanning = true;
     aiMode = true;
@@ -428,6 +436,9 @@
         <div class="flex items-center gap-3">
           <span class="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium tabular-nums dark:bg-gray-800">
             {totalResults} {totalResults === 1 ? "issue" : "issues"}
+          </span>
+          <span class="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium tabular-nums text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" title="Session credits for cloud AI scans. Resets on app restart.">
+            {credits}/60 credits
           </span>
           {#if totalTokens > 0}
             <span class="rounded-md bg-purple-100 px-2.5 py-1 text-xs font-medium tabular-nums text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
@@ -513,7 +524,7 @@
           {:else}
             <button
               onclick={runAIScan}
-              disabled={busy || isScanning || isAIScanning || !selectedDirectory || (isLocalModel ? !modelAvailable : (!activeApiKey() || !isOnline))}
+              disabled={busy || isScanning || isAIScanning || !selectedDirectory || (isLocalModel ? !modelAvailable : (!activeApiKey() || !isOnline || credits <= 0))}
               class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:pointer-events-none disabled:opacity-50 {isLocalModel ? (modelAvailable ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-400') : 'bg-green-600 hover:bg-green-500'}"
               title={isLocalModel ? (modelAvailable ? 'Scan with local AI' : 'Download model first') : (activeApiKey() ? 'Scan with cloud AI' : 'Add an API key first')}
             >
