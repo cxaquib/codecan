@@ -9,20 +9,21 @@ export interface AIModel {
   id: string;
   name: string;
   type: "local" | "cloud";
+  tier?: "free" | "paid";
   provider?: "hf" | "openrouter";
   endpoint?: string;
 }
 
 export const AI_MODELS: AIModel[] = [
-  { id: "local", name: "Qwen2.5-0.5B (Local)", type: "local" },
-  { id: "openrouter/poolside/laguna-m.1:free", name: "Laguna M.1 (free)", type: "cloud", provider: "openrouter" },
-  { id: "openrouter/meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B (free)", type: "cloud", provider: "openrouter" },
-  { id: "openrouter/google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B (free)", type: "cloud", provider: "openrouter" },
-  { id: "openrouter/openai/gpt-oss-120b:free", name: "GPT-OSS-120B (free)", type: "cloud", provider: "openrouter" },
-  { id: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra (free)", type: "cloud", provider: "openrouter" },
-  { id: "openrouter/qwen/qwen3-next-80b-a3b-instruct:free", name: "Qwen3 Next 80B (free)", type: "cloud", provider: "openrouter" },
-  { id: "hf/Qwen/Qwen2.5-Coder-1.5B-Instruct", name: "Qwen2.5-Coder-1.5B (HF)", type: "cloud", provider: "hf", endpoint: "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-1.5B-Instruct" },
-  { id: "hf/bigcode/starcoder2-3b", name: "StarCoder2-3B (HF)", type: "cloud", provider: "hf", endpoint: "https://api-inference.huggingface.co/models/bigcode/starcoder2-3b" },
+  { id: "local", name: "Qwen2.5-0.5B (Local)", tier: "free", type: "local" },
+  { id: "openrouter/poolside/laguna-m.1:free", name: "Laguna M.1", tier: "free", type: "cloud", provider: "openrouter" },
+  { id: "openrouter/meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B", tier: "free", type: "cloud", provider: "openrouter" },
+  { id: "openrouter/google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B", tier: "free", type: "cloud", provider: "openrouter" },
+  { id: "openrouter/openai/gpt-oss-120b:free", name: "GPT-OSS-120B", tier: "free", type: "cloud", provider: "openrouter" },
+  { id: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra", tier: "free", type: "cloud", provider: "openrouter" },
+  { id: "openrouter/qwen/qwen3-next-80b-a3b-instruct:free", name: "Qwen3 Next 80B", tier: "free", type: "cloud", provider: "openrouter" },
+  { id: "hf/Qwen/Qwen2.5-Coder-1.5B-Instruct", name: "Qwen2.5-Coder-1.5B (HF)", tier: "free", type: "cloud", provider: "hf", endpoint: "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-1.5B-Instruct" },
+  { id: "hf/bigcode/starcoder2-3b", name: "StarCoder2-3B (HF)", tier: "free", type: "cloud", provider: "hf", endpoint: "https://api-inference.huggingface.co/models/bigcode/starcoder2-3b" },
 ];
 
 function estimateTokens(text: string): number {

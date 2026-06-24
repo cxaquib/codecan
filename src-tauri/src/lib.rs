@@ -1176,7 +1176,12 @@ async fn batch_ai_scan(
                         let status = resp.status();
                         let body_text = resp.into_string().unwrap_or_default();
                         if status != 200 {
-                            AiBatchResult { file: file.path.clone(), issues: vec![], error: Some(format!("{}: {}", status, body_text)) }
+                            let error = if status == 401 || status == 403 {
+                                "Invalid Hugging Face API key. Check your token.".to_string()
+                            } else {
+                                format!("{}: {}", status, body_text)
+                            };
+                            AiBatchResult { file: file.path.clone(), issues: vec![], error: Some(error) }
                         } else {
                             let issues = parse_ai_response(&body_text, &file.path);
                             AiBatchResult { file: file.path.clone(), issues, error: None }
@@ -1184,7 +1189,12 @@ async fn batch_ai_scan(
                     }
                     Err(ureq::Error::Status(code, resp)) => {
                         let body_text = resp.into_string().unwrap_or_default();
-                        AiBatchResult { file: file.path.clone(), issues: vec![], error: Some(format!("{}: {}", code, body_text)) }
+                        let error = if code == 401 || code == 403 {
+                            "Invalid Hugging Face API key. Check your token.".to_string()
+                        } else {
+                            format!("{}: {}", code, body_text)
+                        };
+                        AiBatchResult { file: file.path.clone(), issues: vec![], error: Some(error) }
                     }
                     Err(e) => {
                         AiBatchResult { file: file.path.clone(), issues: vec![], error: Some(e.to_string()) }

@@ -50,6 +50,16 @@
   let newKeyName = $state("");
   let newKeyValue = $state("");
   let credits = $state(60);
+  let showLog = $state(false);
+  let showDocs = $state(false);
+  let showDemo = $state(false);
+  let logEntries = $state<{ time: string; message: string; type: "info" | "error" | "warning" }[]>([]);
+
+  function addLog(message: string, type: "info" | "error" | "warning" = "info") {
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    logEntries = [{ time, message, type }, ...logEntries];
+  }
 
   let elapsedDisplay = $derived.by(() => {
     const m = Math.floor(elapsedSeconds / 60);
@@ -181,6 +191,7 @@
     isScanning = true;
     error = "";
     scanStatus = "Scanning files...";
+    addLog("Starting rule-based scan...", "info");
     scanResults = [];
     totalTokens = 0;
     currentScanId = generateId();
@@ -191,8 +202,10 @@
         scanId: currentScanId,
       });
       scanResults = (JSON.parse(results) as Record<string, unknown>[]).map(mapResult);
+      addLog(`Rule-based scan complete: ${scanResults.length} issue(s) found`, "info");
     } catch (e) {
       error = `Scan failed: ${e}`;
+      addLog(`Scan error: ${e}`, "error");
     } finally {
       stopTimer();
       isScanning = false;
@@ -227,12 +240,15 @@
     busy = true;
     isDownloadingModel = true;
     scanStatus = "Downloading model (~350 MB)...";
+    addLog("Downloading local AI model...", "info");
     try {
       const { ensureLocalModel } = await import("$lib/scanner/ai-scanner");
       await ensureLocalModel();
       await checkModel();
+      addLog("Local AI model downloaded successfully", "info");
     } catch (e) {
       error = `Model download failed: ${e}`;
+      addLog(`Model download error: ${e}`, "error");
     } finally {
       isDownloadingModel = false;
       scanStatus = "";
@@ -368,6 +384,7 @@
     error = "";
     const modelName = AI_MODELS.find(m => m.id === selectedModelId)?.name || selectedModelId;
     scanStatus = isLocalModel ? "Running local AI model..." : `Querying ${modelName}...`;
+    addLog(`Starting AI scan: ${modelName}`, "info");
     totalTokens = 0;
     currentScanId = generateId();
     startTimer();
@@ -383,24 +400,40 @@
           const { scanWithLocalAI } = await import("$lib/scanner/ai-scanner");
           const results = await scanWithLocalAI(
             files,
-            (msg) => { scanStatus = msg; if (msg.includes("ERROR") || msg.includes("error")) scanInfo = msg; },
+            (msg) => {
+              scanStatus = msg;
+              const type = msg.includes("ERROR") || msg.includes("error") ? "error" : "info";
+              if (type === "error") { error = msg; addLog(msg, type); }
+              else if (msg.includes("no issues")) addLog(msg, type);
+            },
             (count) => { totalTokens = count; }
           );
           scanResults = [...scanResults, ...results];
+          addLog(`Local AI scan complete: ${results.length} issue(s) found`, results.length > 0 ? "warning" : "info");
         } else {
           const { scanWithAI } = await import("$lib/scanner/ai-scanner");
           const results = await scanWithAI(
             files,
             selectedModelId,
             activeApiKey(),
-            (msg) => { scanStatus = msg; if (msg.includes("ERROR") || msg.includes("error") || msg.includes("no issues")) scanInfo = msg; },
+            (msg) => {
+              scanStatus = msg;
+              const type = msg.includes("ERROR") || msg.includes("error") ? "error" : msg.includes("no issues") ? "warning" : "info";
+              if (type === "error") {
+                const summary = msg.match(/^AI scan completed with \d+ error\(s\)/);
+                error = summary ? summary[0] + ". Check the log drawer for details." : msg;
+              }
+              addLog(msg, type);
+            },
             (count) => { totalTokens = count; }
           );
           scanResults = [...scanResults, ...results];
+          addLog(`Cloud AI scan complete: ${results.length} issue(s) found`, results.length > 0 ? "warning" : "info");
         }
       }
     } catch (e) {
       error = `AI scan failed: ${e}`;
+      addLog(`AI scan error: ${e}`, "error");
     } finally {
       stopTimer();
       isAIScanning = false;
@@ -445,6 +478,15 @@
               {totalTokens.toLocaleString()} tokens
             </span>
           {/if}
+          <button
+            onclick={async () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
+            class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 transition-colors dark:hover:bg-gray-800"
+            aria-label="Toggle fullscreen"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </button>
           <button
             onclick={() => darkMode = !darkMode}
             class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 transition-colors dark:hover:bg-gray-800"
@@ -575,7 +617,7 @@
             >
               <option value="">-- No key selected --</option>
               {#each apiKeys as k}
-                <option value={k.id}>{k.name}{k.predefined ? ' (env)' : ''}</option>
+                <option value={k.id}>{k.name}{k.predefined ? ' (predefined)' : ''}</option>
               {/each}
             </select>
             <button
@@ -622,12 +664,6 @@
       {#if error}
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
           {error}
-        </div>
-      {/if}
-
-      {#if scanInfo}
-        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
-          {scanInfo}
         </div>
       {/if}
 
@@ -709,6 +745,43 @@
       {/if}
     </div>
 
+    <!-- Floating demo button -->
+    <button
+      onclick={() => showDemo = !showDemo}
+      class="fixed bottom-6 right-48 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-lg transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      aria-label="Demo"
+    >
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </button>
+
+    <!-- Floating docs button -->
+    <button
+      onclick={() => showDocs = !showDocs}
+      class="fixed bottom-6 right-34 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-lg transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      aria-label="Documentation"
+    >
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </button>
+
+    <!-- Floating log button -->
+    <button
+      onclick={() => showLog = !showLog}
+      class="fixed bottom-6 right-20 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-lg transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      aria-label="Log"
+    >
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+      </svg>
+      {#if logEntries.length > 0}
+        <span class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">{logEntries.length > 99 ? "99+" : logEntries.length}</span>
+      {/if}
+    </button>
+
     <!-- Floating help button -->
     <button
       onclick={() => showHelp = !showHelp}
@@ -719,6 +792,214 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 17.75v.007" />
       </svg>
     </button>
+
+    <!-- Log drawer -->
+    {#if showLog}
+      <div
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-label="Scan Log"
+        class="fixed inset-0 z-40"
+        onclick={(e) => e.target === e.currentTarget && (showLog = false)}
+        onkeydown={(e) => e.key === 'Escape' && (showLog = false)}
+      >
+        <div class="fixed inset-0 bg-black/30"></div>
+        <div class="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+          <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+            <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Scan Log ({logEntries.length})</h2>
+            <button
+              onclick={() => showLog = false}
+              class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              aria-label="Close"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3 space-y-2">
+            {#if logEntries.length === 0}
+              <p class="text-sm text-gray-400 text-center py-8">No log entries yet.</p>
+            {:else}
+              {#each logEntries as entry}
+                <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-950">
+                  <div class="flex items-start gap-2">
+                    <span class="shrink-0 mt-0.5 text-xs text-gray-400 font-mono tabular-nums">{entry.time}</span>
+                    <span class="shrink-0 mt-0.5 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide {entry.type === 'error' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : entry.type === 'warning' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}">{entry.type}</span>
+                    <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{entry.message}</p>
+                  </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+          {#if logEntries.length > 0}
+            <div class="border-t border-gray-200 px-4 py-2 dark:border-gray-700">
+              <button
+                onclick={() => logEntries = []}
+                class="text-xs text-gray-500 hover:text-red-500 transition-colors"
+              >
+                Clear log
+              </button>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    <!-- Docs modal -->
+    {#if showDocs}
+      <div
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-label="Documentation"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4"
+        onclick={(e) => e.target === e.currentTarget && (showDocs = false)}
+        onkeydown={(e) => e.key === 'Escape' && (showDocs = false)}
+      >
+        <div
+          class="w-full max-w-2xl max-h-[85vh] rounded-xl border border-gray-200 bg-white shadow-2xl transition-colors dark:border-gray-700 dark:bg-gray-900 flex flex-col"
+        >
+          <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Documentation</h2>
+            <button
+              onclick={() => showDocs = false}
+              class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              aria-label="Close"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="overflow-y-auto p-6 space-y-5 text-sm text-gray-600 dark:text-gray-300">
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">What is Codecan?</h3>
+              <p>Codecan is a desktop application that scans source code repositories for quality issues. It helps you find duplicate code, unused imports, redundant patterns, architecture violations, and risky dependencies — with optional AI-powered analysis for deeper insights.</p>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Scan Types</h3>
+              <div class="space-y-2">
+                <div>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">Rule-based Scan</span>
+                  <p class="text-xs mt-0.5">Works offline with no API key needed. Detects duplicate CSS rules, unused JS/TS/Rust imports, redundant code (deep nesting, long params), component architecture violations (dumb components with smart logic), file size issues, and dependency risks (deprecated/malicious npm packages, unpinned versions, typosquatting).</p>
+                </div>
+                <div>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">Cloud AI Scan</span>
+                  <p class="text-xs mt-0.5">Uses OpenRouter or Hugging Face models to analyze code with natural language understanding. Requires an API key and internet connection. Supports 8 cloud models including Llama 3.3 70B, Gemma 4, Qwen2.5-Coder, and StarCoder2. 60 session credits included — 1 credit per scan, resets on app restart.</p>
+                </div>
+                <div>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">Local AI Scan</span>
+                  <p class="text-xs mt-0.5">Runs a Qwen2.5-0.5B GGUF model (~350 MB) on your machine via llama.cpp. No internet or API key needed after download. Free to use with no credit cost. Best for privacy or offline use.</p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">How to Use</h3>
+              <ol class="list-decimal list-inside space-y-1 text-xs">
+                <li>Select a folder or file using the text input or Browse buttons</li>
+                <li>Click <strong>Scan</strong> for rule-based analysis, or select an AI model and click <strong>Scan with AI</strong></li>
+                <li>For AI scans: add an API key (click "+ Add Key" under API Keys section)</li>
+                <li>For local AI: click "Download Model" to download Qwen2.5-0.5B (~350 MB)</li>
+                <li>View results grouped by category. Click a category to expand and see details</li>
+                <li>Use the log drawer (floating button, bottom-right) to review scan messages</li>
+              </ol>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Supported File Types</h3>
+              <p class="text-xs">JavaScript (.js, .jsx, .mjs), TypeScript (.ts, .tsx), Svelte (.svelte), Rust (.rs), CSS (.css), HTML (.html), JSON (.json), TOML (.toml).</p>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">API Keys</h3>
+              <p class="text-xs">Codecan loads keys from multiple sources (in priority order):</p>
+              <ol class="list-decimal list-inside text-xs mt-1 space-y-0.5">
+                <li>Environment variables: <code class="text-blue-600 dark:text-blue-400">HF_API_KEY</code> and <code class="text-blue-600 dark:text-blue-400">OPENROUTER_API_KEY</code></li>
+                <li>Config file path in <code class="text-blue-600 dark:text-blue-400">CODECAN_CONFIG</code> env var</li>
+                <li><code class="text-blue-600 dark:text-blue-400">~/.codecan.json</code> in your home directory</li>
+                <li><code class="text-blue-600 dark:text-blue-400">.codecan.json</code> in the project directory (auto-discovered by walking up)</li>
+                <li>User-entered keys via the UI (stored in localStorage)</li>
+              </ol>
+              <p class="text-xs mt-1">Format: <code class="text-blue-600 dark:text-blue-400">{'{'}{" "}"apiKeys": [{'{'}{" "}"name": "...", "key": "..." }] }</code></p>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Credits</h3>
+              <p class="text-xs">Each session starts with <strong>60 credits</strong>. Cloud AI scans cost 1 credit each. Credits reset when the app is restarted. Local AI scans are free and do not consume credits.</p>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">CLI Usage</h3>
+              <p class="text-xs">You can also run scans from the terminal:</p>
+              <pre class="mt-1 rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-xs dark:border-gray-800 dark:bg-gray-950"><code>npm run analyze            # Scan current directory (console)
+npm run analyze:json       # Scan current directory (JSON)
+npx tsx src/index.ts scan /path  # Scan specific path</code></pre>
+            </section>
+
+            <section>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Tips</h3>
+              <ul class="list-disc list-inside text-xs space-y-1">
+                <li>Use the log drawer to track AI scan progress and debug errors</li>
+                <li>OpenRouter free models may be rate-limited. Try a different model if one fails</li>
+                <li>Local model is best for offline use but slower than cloud models</li>
+                <li>Credits reset on restart — close and reopen the app to get a fresh 60</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Demo video modal -->
+    {#if showDemo}
+      <div
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-label="Demo Video"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4"
+        onclick={(e) => e.target === e.currentTarget && (showDemo = false)}
+        onkeydown={(e) => e.key === 'Escape' && (showDemo = false)}
+      >
+        <div
+          class="w-full max-w-3xl rounded-xl border border-gray-200 bg-white shadow-2xl transition-colors dark:border-gray-700 dark:bg-gray-900"
+        >
+          <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Demo</h2>
+            <button
+              onclick={() => showDemo = false}
+              class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              aria-label="Close"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="p-4">
+            <video
+              src="/demo.mp4"
+              controls
+              class="w-full rounded-lg"
+              poster="/demo.gif"
+              onerror={(e) => {
+                const v = e.target as HTMLVideoElement;
+                v.style.display = 'none';
+                v.insertAdjacentHTML('afterend', '<img src="/demo.gif" class="w-full rounded-lg" alt="Demo animation" style="display:block" />');
+              }}
+            >
+              <track kind="captions" src="" label="No captions" />
+              <img src="/demo.gif" class="w-full rounded-lg" alt="Demo animation" />
+            </video>
+            <p class="mt-3 text-xs text-gray-400 text-center">A quick walkthrough of Codecan's key features.</p>
+          </div>
+        </div>
+      </div>
+    {/if}
 
     <!-- Help modal -->
     {#if showHelp}
