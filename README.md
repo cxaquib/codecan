@@ -1,7 +1,9 @@
 # Codecan
 
 [![Build](https://github.com/cxaquib/codecan/actions/workflows/build.yml/badge.svg)](https://github.com/cxaquib/codecan/actions/workflows/build.yml)
-[![Latest Release](https://img.shields.io/github/v/release/cxaquib/codecan?label=download&color=brightgreen)](https://github.com/cxaquib/codecan/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/cxaquib/codecan/total?color=brightgreen)](https://github.com/cxaquib/codecan/releases/latest)
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=cxaquib.codecan&left_text=visitors)](https://github.com/cxaquib/codecan)
+[![Latest Release](https://img.shields.io/github/v/release/cxaquib/codecan?label=release&color=blue)](https://github.com/cxaquib/codecan/releases/latest)
 
 Cut the clutter. Keep the logic.
 
@@ -60,14 +62,23 @@ sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb  # Inst
 
 ### Downloads
 
-Pre-built installers for all platforms are available on the [Releases page](https://github.com/cxaquib/codecan/releases/latest):
+Pre-built installers for all platforms on the [Releases page](https://github.com/cxaquib/codecan/releases/latest). Tap/copy any link to share:
 
-| Platform | Format | Direct Link |
-|----------|--------|-------------|
+```text
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.0-1.x86_64.rpm
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.msi
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.dmg
+```
+
+| Platform | Format | Download |
+|----------|--------|----------|
 | Linux | `.deb` | [Codecan_0.1.0_amd64.deb](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb) |
 | Linux | `.rpm` | [Codecan-0.1.0-1.x86_64.rpm](https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.0-1.x86_64.rpm) |
 | Windows | `.msi` | [Codecan_0.1.0_x64.msi](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.msi) |
 | macOS | `.dmg` | [Codecan_0.1.0_x64.dmg](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.dmg) |
+
+> Download counts and visitor stats are shown in the badges at the top of this page. Counts update automatically from GitHub.
 
 To trigger a new build, push a tag:
 
