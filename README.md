@@ -66,8 +66,14 @@ Pre-built installers for all platforms on the [Releases page](https://github.com
 
 ```text
 https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb
+```
+```text
 https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.0-1.x86_64.rpm
+```
+```text
 https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.msi
+```
+```text
 https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.dmg
 ```
 
