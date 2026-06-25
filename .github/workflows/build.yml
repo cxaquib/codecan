@@ -5,6 +5,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm install
+      - run: npm run tauri build
+      - name: Fix corrupt .deb (Tauri bundler bug workaround)
+        run: |
+          ar rcs src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb \
+            src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64/debian-binary \
+            src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64/control.tar.gz \
+            src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64/data.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Codecan-Linux
+          path: |
+            src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb
+            src-tauri/target/release/bundle/rpm/Codecan-0.1.0-1.x86_64.rpm
+
   build-windows:
     runs-on: windows-latest
     steps:
@@ -34,3 +57,20 @@ jobs:
         with:
           name: Codecan-macOS
           path: src-tauri/target/release/bundle/dmg/*.dmg
+
+  release:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Codecan-Linux/Codecan_0.1.0_amd64.deb
+            Codecan-Linux/Codecan-0.1.0-1.x86_64.rpm
+            Codecan-Windows/*.msi
+            Codecan-macOS/*.dmg
+          generate_release_notes: true

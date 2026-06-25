@@ -1,5 +1,8 @@
 # Codecan
 
+[![Build](https://github.com/cxaquib/codecan/actions/workflows/build.yml/badge.svg)](https://github.com/cxaquib/codecan/actions/workflows/build.yml)
+[![Latest Release](https://img.shields.io/github/v/release/cxaquib/codecan?label=download&color=brightgreen)](https://github.com/cxaquib/codecan/releases/latest)
+
 Cut the clutter. Keep the logic.
 
 Codecan is a desktop code scanning application built with Tauri v2 + SvelteKit 5. It scans source code repositories for quality issues — duplicate code, unused imports, redundant patterns, architecture violations, and dependency risks — with optional AI-powered analysis using local or cloud models.
@@ -15,6 +18,24 @@ Codecan is a desktop code scanning application built with Tauri v2 + SvelteKit 5
 - **Cross-platform** — Tauri v2 desktop app (Linux, macOS, Windows).
 
 ## Quick Start
+
+### Download and run (no install)
+
+```bash
+curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb
+sudo dpkg -i Codecan_0.1.0_amd64.deb
+codecan
+```
+
+Or run the binary directly:
+
+```bash
+# Download and run without installing
+chmod +x Codecan
+./Codecan
+```
+
+### Build from source
 
 ```bash
 npm install
@@ -37,15 +58,24 @@ sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb  # Inst
 3. Click **Scan** for rule-based analysis, or **Scan with AI** for AI-powered analysis
 4. View results grouped by category with severity badges and code snippets
 
-### Cross-platform builds
+### Downloads
 
-Windows and macOS builds require native runners. A GitHub Actions workflow is provided:
+Pre-built installers for all platforms are available on the [Releases page](https://github.com/cxaquib/codecan/releases/latest):
+
+| Platform | Format | Direct Link |
+|----------|--------|-------------|
+| Linux | `.deb` | [Codecan_0.1.0_amd64.deb](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb) |
+| Linux | `.rpm` | [Codecan-0.1.0-1.x86_64.rpm](https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.0-1.x86_64.rpm) |
+| Windows | `.msi` | [Codecan_0.1.0_x64.msi](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.msi) |
+| macOS | `.dmg` | [Codecan_0.1.0_x64.dmg](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.dmg) |
+
+To trigger a new build, push a tag:
 
 ```bash
 git tag v0.1.0 && git push --tags
 ```
 
-Or trigger manually from the Actions tab. This produces `.msi` (Windows) and `.dmg` (macOS).
+Or trigger manually from the Actions tab. The CI builds all platforms and creates a release automatically.
 
 ### CLI
 
