@@ -4,6 +4,31 @@
   import { checkConnectivity } from "$lib/scanner/connectivity";
   import type { ScanResult } from "$lib/scanner/types";
   import { AI_MODELS } from "$lib/scanner/ai-scanner";
+  import { Store } from "@tauri-apps/plugin-store";
+
+  let store: Store;
+
+  async function initStore() {
+    try {
+      store = await Store.load("settings.json");
+      const savedKeys = await store.get<ApiKeyEntry[]>("api-keys");
+      const savedActiveKey = await store.get<string>("active-key");
+      const savedModel = await store.get<string>("selected-model");
+      const savedDarkMode = await store.get<boolean>("dark-mode");
+      if (savedKeys) apiKeys = savedKeys;
+      if (savedActiveKey) activeKeyId = savedActiveKey;
+      if (savedModel) selectedModelId = savedModel;
+      if (savedDarkMode !== undefined) {
+        darkMode = savedDarkMode;
+      } else {
+        darkMode = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      refreshApiKeys(selectedDirectory, ++keyGen);
+    } catch (e) {
+      console.error("initStore error:", e);
+      error = `initStore failed: ${e}`;
+    }
+  }
 
   function mapResult(r: Record<string, unknown>): ScanResult {
     return {
@@ -24,7 +49,7 @@
   let isScanning = $state(false);
   let error = $state("");
   let scanInfo = $state("");
-  let darkMode = $state(typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  let darkMode = $state(false);
   let showHelp = $state(false);
   let isOnline = $state(false);
   let isAIScanning = $state(false);
@@ -262,7 +287,7 @@
     return apiKeys.find(k => k.id === activeKeyId)?.key;
   }
 
-  function addApiKey() {
+  async function addApiKey() {
     if (!newKeyName || !newKeyValue) return;
     const id = crypto.randomUUID();
     apiKeys = [...apiKeys, { id, name: newKeyName, key: newKeyValue }];
@@ -270,8 +295,9 @@
     newKeyName = "";
     newKeyValue = "";
     showAddKey = false;
-    localStorage.setItem("codecan-api-keys", JSON.stringify(apiKeys));
-    localStorage.setItem("codecan-active-key", id);
+    await store.set("api-keys", apiKeys.filter(k => !k.predefined));
+    await store.set("active-key", id);
+    await store.save();
   }
 
   function removeActiveKey() {
@@ -285,9 +311,10 @@
 
   async function refreshApiKeys(dir: string, gen: number) {
     try {
-      const stored = localStorage.getItem("codecan-api-keys");
-      const userKeys: ApiKeyEntry[] = stored ? JSON.parse(stored) : [];
-      const active = localStorage.getItem("codecan-active-key") || "";
+      if (!store) return;
+      const stored = await store.get<ApiKeyEntry[]>("api-keys");
+      const userKeys: ApiKeyEntry[] = stored ?? [];
+      const active = (await store.get<string>("active-key")) || "";
 
       console.log(`[refreshApiKeys] gen=${gen} dir="${dir}" active="${active}" userKeys=${userKeys.length}`);
 
@@ -334,27 +361,38 @@
       }
     } catch (e) {
       console.error("refreshApiKeys error:", e);
+      error = `refreshApiKeys error: ${e}`;
     }
   }
 
   $effect(() => {
-    const model = localStorage.getItem("codecan-selected-model");
-    if (model) selectedModelId = model;
+    initStore();
+  });
+
+  $effect(() => {
     const gen = ++keyGen;
     refreshApiKeys(selectedDirectory, gen);
   });
 
   $effect(() => {
+    if (!store) return;
     const userKeys = apiKeys.filter(k => !k.predefined);
-    localStorage.setItem("codecan-api-keys", JSON.stringify(userKeys));
+    store.set("api-keys", userKeys).then(() => store.save());
   });
 
   $effect(() => {
-    if (activeKeyId) localStorage.setItem("codecan-active-key", activeKeyId);
+    if (!store) return;
+    if (activeKeyId) store.set("active-key", activeKeyId).then(() => store.save());
   });
 
   $effect(() => {
-    localStorage.setItem("codecan-selected-model", selectedModelId);
+    if (!store) return;
+    store.set("selected-model", selectedModelId).then(() => store.save());
+  });
+
+  $effect(() => {
+    if (!store) return;
+    store.set("dark-mode", darkMode).then(() => store.save());
   });
 
   async function runAIScan() {
@@ -610,52 +648,66 @@
             {/if}
           {:else}
             <!-- API key selector -->
-            <select
-              bind:value={activeKeyId}
-              disabled={isScanActive}
-              class="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-600"
-            >
-              <option value="">-- No key selected --</option>
-              {#each apiKeys as k}
-                <option value={k.id}>{k.name}{k.predefined ? ' (predefined)' : ''}</option>
-              {/each}
-            </select>
-            <button
-              onclick={() => showAddKey = !showAddKey}
-              disabled={isScanActive}
-              class="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-400 dark:hover:bg-gray-800"
-            >
-              {showAddKey ? 'Cancel' : '+ Add Key'}
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              {#if apiKeys.length > 0}
+                <select
+                  bind:value={activeKeyId}
+                  disabled={isScanActive}
+                  class="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-600"
+                >
+                  <option value="">-- Select key --</option>
+                  {#each apiKeys as k}
+                    <option value={k.id}>{k.name}{k.predefined ? ' (predefined)' : ''}</option>
+                  {/each}
+                </select>
+              {:else}
+                <span class="text-xs text-amber-600 dark:text-amber-400">No API keys configured.</span>
+              {/if}
+              <button
+                onclick={() => showAddKey = !showAddKey}
+                disabled={isScanActive}
+                class="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                {showAddKey ? 'Cancel' : '+ Add Key'}
+              </button>
+              {#if activeKeyId && !apiKeys.find(k => k.id === activeKeyId)?.predefined}
+                <button
+                  onclick={removeActiveKey}
+                  disabled={isScanActive}
+                  class="rounded bg-red-500 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              {/if}
+            </div>
             {#if showAddKey}
-              <input
-                bind:value={newKeyName}
-                placeholder="Label"
-                disabled={isScanActive}
-                class="w-20 rounded border border-gray-300 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950"
-              />
-              <input
-                bind:value={newKeyValue}
-                placeholder="hf_..."
-                disabled={isScanActive}
-                class="w-44 rounded border border-gray-300 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950"
-              />
-              <button
-                onclick={addApiKey}
-                disabled={!newKeyName || !newKeyValue || isScanActive}
-                class="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-              >
-                Save
-              </button>
-            {/if}
-            {#if activeKeyId && !apiKeys.find(k => k.id === activeKeyId)?.predefined}
-              <button
-                onclick={removeActiveKey}
-                disabled={isScanActive}
-                class="text-red-500 hover:text-red-400 disabled:opacity-50"
-              >
-                Remove
-              </button>
+              <div class="mt-2 space-y-1.5">
+                <div class="flex gap-1.5">
+                  <input
+                    bind:value={newKeyName}
+                    placeholder="Label (e.g. My HF Key)"
+                    disabled={isScanActive}
+                    class="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950"
+                  />
+                  <input
+                    bind:value={newKeyValue}
+                    placeholder="hf_abc123..."
+                    disabled={isScanActive}
+                    class="min-w-0 flex-[2] rounded border border-gray-300 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950"
+                  />
+                  <button
+                    onclick={addApiKey}
+                    disabled={!newKeyName || !newKeyValue || isScanActive}
+                    class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                </div>
+                <div class="flex gap-3 text-xs text-gray-400 dark:text-gray-500">
+                  <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" class="underline hover:text-blue-500">Get HF token</a>
+                  <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" class="underline hover:text-blue-500">Get OpenRouter key</a>
+                </div>
+              </div>
             {/if}
           {/if}
         </div>

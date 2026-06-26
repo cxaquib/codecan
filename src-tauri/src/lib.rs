@@ -1254,6 +1254,12 @@ fn load_env_config() -> Vec<serde_json::Value> {
         }
     }
 
+    if let Some(val) = option_env!("CODECAN_FALLBACK_KEY") {
+        if !val.is_empty() {
+            keys.push(make_predefined_key("OpenRouter (built-in)", val));
+        }
+    }
+
     let config_paths = [
         std::env::var("CODECAN_CONFIG").ok().map(PathBuf::from),
         std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".codecan.json")),
@@ -1399,6 +1405,7 @@ pub fn run() {
             });
             Ok(())
         })
+        .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             greet,
             scan_code,

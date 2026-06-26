@@ -23,18 +23,18 @@ Codecan is a desktop code scanning application built with Tauri v2 + SvelteKit 5
 
 ### Download and run (no install)
 
+**Debian/Ubuntu:**
 ```bash
-curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb
-sudo dpkg -i Codecan_0.1.0_amd64.deb
+curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.deb
+sudo dpkg -i Codecan_0.1.1_amd64.deb
 codecan
 ```
 
-Or run the binary directly:
-
+**Any Linux (AppImage — no install):**
 ```bash
-# Download and run without installing
-chmod +x Codecan
-./Codecan
+curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.AppImage
+chmod +x Codecan_0.1.1_amd64.AppImage
+./Codecan_0.1.1_amd64.AppImage
 ```
 
 ### Build from source
@@ -44,15 +44,23 @@ npm install
 npm run tauri:dev
 ```
 
+
+
 ## Usage
 
 ### Desktop App
 
 ```bash
-npm run tauri:dev       # Development mode (hot reload)
-npm run tauri:build     # Production build
-./scripts/rebuild-deb.sh  # Fix .deb after build (Tauri bundler bug workaround)
-sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb  # Install .deb
+cargo tauri dev          # Development mode (hot reload), from src-tauri/
+cargo tauri build        # Production build (set PKG_CONFIG_PATH=~/pkgconfig if not in .bashrc)
+./scripts/rebuild-deb.sh # Fix .deb after build (Tauri bundler bug workaround)
+sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.1_amd64.deb
+```
+
+Or via npm:
+```bash
+npm run tauri:dev        # Development mode
+npm run tauri:build      # Production build
 ```
 
 1. Launch the app
@@ -65,24 +73,28 @@ sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.0_amd64.deb  # Inst
 Pre-built installers for all platforms on the [Releases page](https://github.com/cxaquib/codecan/releases/latest). Tap/copy any link to share:
 
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.deb
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.0-1.x86_64.rpm
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.1-1.x86_64.rpm
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.msi
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.msi
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.dmg
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.dmg
+```
+```text
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.AppImage
 ```
 
 | Platform | Format | Download |
 |----------|--------|----------|
-| Linux | `.deb` | [Codecan_0.1.0_amd64.deb](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_amd64.deb) |
-| Linux | `.rpm` | [Codecan-0.1.0-1.x86_64.rpm](https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.0-1.x86_64.rpm) |
-| Windows | `.msi` | [Codecan_0.1.0_x64.msi](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.msi) |
-| macOS | `.dmg` | [Codecan_0.1.0_x64.dmg](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.0_x64.dmg) |
+| Linux | `.deb` | [Codecan_0.1.1_amd64.deb](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.deb) |
+| Linux | `.rpm` | [Codecan-0.1.1-1.x86_64.rpm](https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.1-1.x86_64.rpm) |
+| Linux | `.AppImage` | [Codecan_0.1.1_amd64.AppImage](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.AppImage) |
+| Windows | `.msi` | [Codecan_0.1.1_x64.msi](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.msi) |
+| macOS | `.dmg` | [Codecan_0.1.1_x64.dmg](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.dmg) |
 
 > Download counts and visitor stats are shown in the badges at the top of this page. Counts update automatically from GitHub.
 
@@ -116,6 +128,7 @@ Full architecture reference with every file, command, data flow, and design deci
 | `npm run tauri:dev` | Tauri desktop app dev mode |
 | `npm run tauri:build` | Production Tauri bundle |  
 | `./scripts/rebuild-deb.sh` | Fix corrupt .deb after `tauri build` |
+| `./scripts/build-appimage.sh` | Build AppImage (handles missing `librsvg2-dev`) |
 | `npm run check` | Type-check (svelte-check) |
 | `npm run build` | Frontend build only |
 | `npm run test` | Run scanner tests (Vitest) |
