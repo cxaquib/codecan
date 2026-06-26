@@ -25,16 +25,16 @@ Codecan is a desktop code scanning application built with Tauri v2 + SvelteKit 5
 
 **Debian/Ubuntu:**
 ```bash
-curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.deb
-sudo dpkg -i Codecan_0.1.1_amd64.deb
+curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_amd64.deb
+sudo dpkg -i Codecan_0.1.2_amd64.deb
 codecan
 ```
 
 **Any Linux (AppImage — no install):**
 ```bash
-curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.AppImage
-chmod +x Codecan_0.1.1_amd64.AppImage
-./Codecan_0.1.1_amd64.AppImage
+curl -LO https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_amd64.AppImage
+chmod +x Codecan_0.1.2_amd64.AppImage
+./Codecan_0.1.2_amd64.AppImage
 ```
 
 ### Build from source
@@ -54,7 +54,7 @@ npm run tauri:dev
 cargo tauri dev          # Development mode (hot reload), from src-tauri/
 cargo tauri build        # Production build (set PKG_CONFIG_PATH=~/pkgconfig if not in .bashrc)
 ./scripts/rebuild-deb.sh # Fix .deb after build (Tauri bundler bug workaround)
-sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.1_amd64.deb
+sudo dpkg -i src-tauri/target/release/bundle/deb/Codecan_0.1.2_amd64.deb
 ```
 
 Or via npm:
@@ -73,35 +73,35 @@ npm run tauri:build      # Production build
 Pre-built installers for all platforms on the [Releases page](https://github.com/cxaquib/codecan/releases/latest). Tap/copy any link to share:
 
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.deb
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_amd64.deb
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.1-1.x86_64.rpm
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.2-1.x86_64.rpm
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.msi
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_x64.msi
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.dmg
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_x64.dmg
 ```
 ```text
-https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.AppImage
+https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_amd64.AppImage
 ```
 
 | Platform | Format | Download |
 |----------|--------|----------|
-| Linux | `.deb` | [Codecan_0.1.1_amd64.deb](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.deb) |
-| Linux | `.rpm` | [Codecan-0.1.1-1.x86_64.rpm](https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.1-1.x86_64.rpm) |
-| Linux | `.AppImage` | [Codecan_0.1.1_amd64.AppImage](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_amd64.AppImage) |
-| Windows | `.msi` | [Codecan_0.1.1_x64.msi](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.msi) |
-| macOS | `.dmg` | [Codecan_0.1.1_x64.dmg](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.1_x64.dmg) |
+| Linux | `.deb` | [Codecan_0.1.2_amd64.deb](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_amd64.deb) |
+| Linux | `.rpm` | [Codecan-0.1.2-1.x86_64.rpm](https://github.com/cxaquib/codecan/releases/latest/download/Codecan-0.1.2-1.x86_64.rpm) |
+| Linux | `.AppImage` | [Codecan_0.1.2_amd64.AppImage](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_amd64.AppImage) |
+| Windows | `.msi` | [Codecan_0.1.2_x64.msi](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_x64.msi) |
+| macOS | `.dmg` | [Codecan_0.1.2_x64.dmg](https://github.com/cxaquib/codecan/releases/latest/download/Codecan_0.1.2_x64.dmg) |
 
 > Download counts and visitor stats are shown in the badges at the top of this page. Counts update automatically from GitHub.
 
 To trigger a new build, push a tag:
 
 ```bash
-git tag v0.1.0 && git push --tags
+git tag v0.1.2 && git push --tags
 ```
 
 Or trigger manually from the Actions tab. The CI builds all platforms and creates a release automatically.
